@@ -1,0 +1,10 @@
+# Go
+/bin/
+/dist/
+
+# IDEs
+.idea/
+.vscode/
+
+# OS
+.DS_Store
