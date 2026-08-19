@@ -34,10 +34,10 @@ func (s *Server) Run(ctx context.Context, addr string) error {
 
 	mux.HandleFunc("/description.xml", handlers.HandleDescription(s.logger, s.bridge))
 	mux.HandleFunc("/api/", handlers.HandleApi(s.logger, s.bridge))
-	mux.HandleFunc("/api/001788FFFE23BFC2/lights", handlers.HandleLights(s.logger))
-	mux.HandleFunc("/api/001788FFFE23BFC2/lights/1", handlers.HandleLight(s.logger))
-	mux.HandleFunc("/api/001788FFFE23BFC2/groups", handlers.HandleGroups(s.logger))
-	mux.HandleFunc("/api/001788FFFE23BFC2/scenes", handlers.HandleScenes(s.logger))
+	mux.HandleFunc("/api/"+s.bridge.ID+"/lights", handlers.HandleLights(s.logger))
+	mux.HandleFunc("/api/"+s.bridge.ID+"/lights/1", handlers.HandleLight(s.logger))
+	mux.HandleFunc("/api/"+s.bridge.ID+"/groups", handlers.HandleGroups(s.logger))
+	mux.HandleFunc("/api/"+s.bridge.ID+"/scenes", handlers.HandleScenes(s.logger))
 	mux.HandleFunc("/", s.HandleUnknownRequest)
 
 	httpServer := &http.Server{
