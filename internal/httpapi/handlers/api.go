@@ -22,7 +22,7 @@ func HandleApi(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
 			fmt.Fprint(w, `[
 				{
 					"success": {
-						"username": `+bridge.ID+`
+						"username": "`+bridge.Username+`"
 					}
 				}
 			]`)

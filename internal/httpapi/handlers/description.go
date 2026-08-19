@@ -38,7 +38,7 @@ const descriptionXmlTemplate = `
 	</root>`
 
 func parseDescriptionXML(bridge *bridge.Bridge) string {
-	return fmt.Sprintf(descriptionXmlTemplate, bridge.IpAddr, bridge.Port, bridge.IpAddr, bridge.ID, bridge.UUID)
+	return fmt.Sprintf(descriptionXmlTemplate, bridge.IpAddr, bridge.Port, bridge.IpAddr, bridge.Username, bridge.UUID)
 }
 
 func HandleDescription(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
