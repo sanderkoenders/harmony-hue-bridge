@@ -7,12 +7,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sanderkoenders/harmony-hue-bridge/internal/ssdp"
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/httpapi"
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/ssdp"
 )
 
 func main() {
-	logger := log.New(os.Stdout, "", log.LstdFlags | log.Lmicroseconds)
+	logger := log.New(os.Stdout, "", log.LstdFlags|log.Lmicroseconds)
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),

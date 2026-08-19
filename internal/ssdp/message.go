@@ -50,4 +50,3 @@ func (m *Message) Header(name string) string {
 func (m *Message) IsMSearch() bool {
 	return strings.EqualFold(m.Method, "M-SEARCH * HTTP/1.1")
 }
-
