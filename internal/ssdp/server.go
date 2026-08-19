@@ -34,7 +34,7 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	return s.readLoop(ctx, conn)
+	return s.readPackets(ctx, conn, s.handlePacket)
 }
 
 func (s *Server) listen(ctx context.Context) (*net.UDPConn, error) {
@@ -62,7 +62,11 @@ func (s *Server) listen(ctx context.Context) (*net.UDPConn, error) {
 	return conn, nil
 }
 
-func (s *Server) readLoop(ctx context.Context, conn *net.UDPConn) error {
+func (s *Server) readPackets(
+	ctx context.Context,
+	conn *net.UDPConn,
+	handler func(conn *net.UDPConn, remoteAddr *net.UDPAddr, data []byte),
+) error {
 	buf := make([]byte, 64*1024)
 
 	for {
@@ -76,7 +80,7 @@ func (s *Server) readLoop(ctx context.Context, conn *net.UDPConn) error {
 			}
 		}
 
-		s.handlePacket(conn, remoteAddr, buf[:n])
+		handler(conn, remoteAddr, buf[:n])
 	}
 }
 
