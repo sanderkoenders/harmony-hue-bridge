@@ -10,7 +10,7 @@ type Message struct {
 	Headers map[string]string
 }
 
-func ParseMessage(data []byte) (*Message, error) {
+func FromDataFrame(data []byte) (*Message, error) {
 	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
 
 	if len(lines) == 0 {
@@ -43,10 +43,38 @@ func ParseMessage(data []byte) (*Message, error) {
 	return msg, nil
 }
 
+func NewMessage(method string) *Message {
+	return &Message{
+		Method:  method,
+		Headers: make(map[string]string),
+	}
+}
+
+func (msg *Message) AddHeader(name, value string) {
+	name = strings.ToLower(strings.TrimSpace(name))
+	value = strings.TrimSpace(value)
+
+	msg.Headers[name] = value
+}
+
 func (m *Message) Header(name string) string {
 	return m.Headers[strings.ToLower(name)]
 }
 
 func (m *Message) IsMSearch() bool {
 	return strings.EqualFold(m.Method, "M-SEARCH * HTTP/1.1")
+}
+
+func (msg *Message) String() string {
+	var sb strings.Builder
+	sb.WriteString(msg.Method)
+	sb.WriteString("\r\n")
+
+	for name, value := range msg.Headers {
+		sb.WriteString(fmt.Sprintf("%s: %s\r\n", name, value))
+	}
+
+	sb.WriteString("\r\n")
+
+	return sb.String()
 }

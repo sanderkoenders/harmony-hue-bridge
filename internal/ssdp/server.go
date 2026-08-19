@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/ssdp/handlers"
 )
 
 const (
@@ -28,6 +28,16 @@ func NewServer(logger *log.Logger, bridge *bridge.Bridge) *Server {
 }
 
 func (s *Server) Run(ctx context.Context) error {
+	conn, err := s.listen(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	return s.readLoop(ctx, conn)
+}
+
+func (s *Server) listen(ctx context.Context) (*net.UDPConn, error) {
 	addr := &net.UDPAddr{
 		IP:   net.ParseIP(MulticastAddress),
 		Port: Port,
@@ -35,9 +45,8 @@ func (s *Server) Run(ctx context.Context) error {
 
 	conn, err := net.ListenMulticastUDP("udp4", nil, addr)
 	if err != nil {
-		return fmt.Errorf("listen on SSDP multicast: %w", err)
+		return nil, fmt.Errorf("listen on SSDP multicast: %w", err)
 	}
-	defer conn.Close()
 
 	s.logger.Printf(
 		"SSDP listening on %s:%d",
@@ -50,6 +59,10 @@ func (s *Server) Run(ctx context.Context) error {
 		conn.Close()
 	}()
 
+	return conn, nil
+}
+
+func (s *Server) readLoop(ctx context.Context, conn *net.UDPConn) error {
 	buf := make([]byte, 64*1024)
 
 	for {
@@ -72,43 +85,16 @@ func (s *Server) handlePacket(
 	remoteAddr *net.UDPAddr,
 	data []byte,
 ) {
-	msg, err := ParseMessage(data)
+	msg, err := FromDataFrame(data)
 	if err != nil {
 		s.logger.Printf("invalid SSDP message: %v", err)
 		return
 	}
 
-	if !msg.IsMSearch() {
+	if msg.IsMSearch() {
+		handlers.HandleMSearch(s.logger, s.bridge, conn, remoteAddr, msg.Headers)
 		return
 	}
 
-	st := msg.Header("st")
-	man := msg.Header("man")
-
-	// Only respond to actual SSDP discovery requests.
-	if !strings.EqualFold(man, `"ssdp:discover"`) {
-		return
-	}
-
-	response := fmt.Sprintf(
-		"HTTP/1.1 200 OK\r\n"+
-			"CACHE-CONTROL: max-age=100\r\n"+
-			"EXT:\r\n"+
-			"LOCATION: http://"+s.bridge.IpAddr+":"+fmt.Sprintf("%d", s.bridge.Port)+"/description.xml\r\n"+
-			"SERVER: Linux/1.0 UPnP/1.0 IpBridge/1.0\r\n"+
-			"ST: %s\r\n"+
-			"USN: uuid:"+s.bridge.UUID+"::urn:schemas-upnp-org:device:basic:1\r\n"+
-			"\r\n",
-		st,
-	)
-
-	_, err = conn.WriteToUDP([]byte(response), remoteAddr)
-	if err != nil {
-		s.logger.Printf(
-			"failed to send SSDP response to %s: %v",
-			remoteAddr,
-			err,
-		)
-		return
-	}
+	s.logger.Printf("Unhandled SSDP message: method=%q headers=%v", msg.Method, msg.Headers)
 }
