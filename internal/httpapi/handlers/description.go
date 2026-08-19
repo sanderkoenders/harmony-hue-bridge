@@ -1,39 +1,47 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 )
 
-const descriptionXML = `<?xml version="1.0" encoding="UTF-8" ?>
-<root xmlns="urn:schemas-upnp-org:device-1-0">
-	<specVersion>
-		<major>1</major>
-		<minor>0</minor>
-	</specVersion>
+const descriptionXmlTemplate = `
+	<?xml version="1.0" encoding="UTF-8" ?>
+	<root xmlns="urn:schemas-upnp-org:device-1-0">
+		<specVersion>
+			<major>1</major>
+			<minor>0</minor>
+		</specVersion>
 
-	<URLBase>http://192.168.30.104:80/</URLBase>
+		<URLBase>http://%s:%d/</URLBase>
 
-	<device>
-		<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
+		<device>
+			<deviceType>urn:schemas-upnp-org:device:Basic:1</deviceType>
 
-		<friendlyName>Home Assistant Bridge (192.168.30.104)</friendlyName>
+			<friendlyName>Home Assistant Bridge (%s)</friendlyName>
 
-		<manufacturer>Royal Philips Electronics</manufacturer>
-		<manufacturerURL>http://www.philips.com</manufacturerURL>
+			<manufacturer>Royal Philips Electronics</manufacturer>
+			<manufacturerURL>http://www.philips.com</manufacturerURL>
 
-		<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
-		<modelName>Philips hue bridge 2015</modelName>
-		<modelNumber>BSB002</modelNumber>
-		<modelURL>http://www.meethue.com</modelURL>
+			<modelDescription>Philips hue Personal Wireless Lighting</modelDescription>
+			<modelName>Philips hue bridge 2015</modelName>
+			<modelNumber>BSB002</modelNumber>
+			<modelURL>http://www.meethue.com</modelURL>
 
-		<serialNumber>001788FFFE23BFC2</serialNumber>
+			<serialNumber>%s</serialNumber>
 
-		<UDN>uuid:2f402f80-da50-11e1-9b23-001788255acc</UDN>
-	</device>
-</root>`
+			<UDN>uuid:%s</UDN>
+		</device>
+	</root>`
 
-func GetDescription(logger *log.Logger) http.HandlerFunc {
+func parseDescriptionXML(bridge *bridge.Bridge) string {
+	return fmt.Sprintf(descriptionXmlTemplate, bridge.IpAddr, bridge.Port, bridge.IpAddr, bridge.ID, bridge.UUID)
+}
+
+func HandleDescription(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf(
 			"HTTP request: %s %s from %s",
@@ -49,6 +57,6 @@ func GetDescription(logger *log.Logger) http.HandlerFunc {
 
 		w.WriteHeader(http.StatusOK)
 
-		_, _ = w.Write([]byte(descriptionXML))
+		_, _ = w.Write([]byte(parseDescriptionXML(bridge)))
 	}
 }

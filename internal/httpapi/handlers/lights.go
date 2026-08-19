@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func GetLights(logger *log.Logger) http.HandlerFunc {
+func HandleLights(logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%s %s", r.Method, r.URL.Path)
 
@@ -83,7 +83,7 @@ func GetLights(logger *log.Logger) http.HandlerFunc {
 	}
 }
 
-func GetLight(logger *log.Logger) http.HandlerFunc {
+func HandleLight(logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%s %s", r.Method, r.URL.Path)
 

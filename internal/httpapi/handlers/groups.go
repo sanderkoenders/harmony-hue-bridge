@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func GetGroups(logger *log.Logger) http.HandlerFunc {
+func HandleGroups(logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

@@ -8,7 +8,7 @@ import (
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 )
 
-func GetAPI(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
+func HandleApi(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("HTTP %s %s from %s", r.Method, r.URL.RequestURI(), r.RemoteAddr)
 

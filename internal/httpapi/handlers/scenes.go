@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func GetScenes(logger *log.Logger) http.HandlerFunc {
+func HandleScenes(logger *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%s %s", r.Method, r.URL.Path)
 
