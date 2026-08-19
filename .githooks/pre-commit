@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+GOBIN="$(go env GOPATH)/bin"
+
+staged_go_files=$(git diff --cached --name-only -- '*.go')
+
+if [ -n "$staged_go_files" ]; then
+  echo "Formatting staged Go files..."
+  gofmt -w $staged_go_files
+  git add $staged_go_files
+fi
+
+echo "Running golangci-lint..."
+"$GOBIN/golangci-lint" run --fast

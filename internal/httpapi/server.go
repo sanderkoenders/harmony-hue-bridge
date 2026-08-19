@@ -13,12 +13,6 @@ type Light struct {
 	Name string
 }
 
-var lights = []Light{
-	{ID: "1", Name: "Living Room"},
-	{ID: "2", Name: "Kitchen"},
-	{ID: "3", Name: "Bedroom"},
-}
-
 const descriptionXML = `<?xml version="1.0" encoding="UTF-8" ?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">
 	<specVersion>
