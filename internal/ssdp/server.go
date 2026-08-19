@@ -103,6 +103,4 @@ func (s *Server) handlePacket(
 		handlers.HandleMSearch(s.logger, s.bridge, conn, remoteAddr, msg.Headers)
 		return
 	}
-
-	s.logger.Printf("Unhandled SSDP message: method=%q headers=%v", msg.Method, msg.Headers)
 }
