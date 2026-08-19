@@ -1,13 +1,16 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/mqtt"
 )
 
-func HandleLights(logger *log.Logger) http.HandlerFunc {
+func HandleLights(logger *log.Logger, m mqtt.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("HTTP %s %s from %s", r.Method, r.URL.RequestURI(), r.RemoteAddr)
 
@@ -16,74 +19,37 @@ func HandleLights(logger *log.Logger) http.HandlerFunc {
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		lights, err := m.GetLights(r.Context())
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
-		fmt.Fprint(w, `{
-			"1": {
-				"state": {
-					"on": false,
-					"bri": 254,
-					"hue": 10000,
-					"sat": 200,
-					"effect": "none",
-					"xy": [0.5, 0.5],
-					"ct": 250,
-					"alert": "none",
-					"colormode": "ct"
+		// Build hue-like response mapping id -> details
+		resp := make(map[string]any)
+		for id, l := range lights {
+			resp[id] = map[string]any{
+				"state": map[string]any{
+					"on":  l.On,
+					"bri": l.Brightness,
+					"hue": l.Hue,
+					"sat": l.Sat,
 				},
-				"type": "Extended color light",
-				"name": "Living Room 1",
-				"modelid": "LCT001",
+				"type":             "Extended color light",
+				"name":             l.Name,
+				"modelid":          "LCT001",
 				"manufacturername": "Signify",
-				"productname": "Hue color lamp",
-				"uniqueid": "00:11:22:33:44:55:66:01-0b",
-				"swversion": "1.0"
-			},
-			"2": {
-				"state": {
-					"on": false,
-					"bri": 254,
-					"hue": 20000,
-					"sat": 200,
-					"effect": "none",
-					"xy": [0.6, 0.4],
-					"ct": 300,
-					"alert": "none",
-					"colormode": "ct"
-				},
-				"type": "Extended color light",
-				"name": "Living Room 2",
-				"modelid": "LCT001",
-				"manufacturername": "Signify",
-				"productname": "Hue color lamp",
-				"uniqueid": "00:11:22:33:44:55:66:02-0b",
-				"swversion": "1.0"
-			},
-			"3": {
-				"state": {
-					"on": false,
-					"bri": 254,
-					"hue": 20000,
-					"sat": 200,
-					"effect": "none",
-					"xy": [0.6, 0.4],
-					"ct": 300,
-					"alert": "none",
-					"colormode": "ct"
-				},
-				"type": "Extended color light",
-				"name": "Living Room 3",
-				"modelid": "LCT001",
-				"manufacturername": "Signify",
-				"productname": "Hue color lamp",
-				"uniqueid": "00:11:22:33:44:55:66:03-0b",
-				"swversion": "1.0"
+				"swversion":        "1.0",
 			}
-		}`)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		enc := json.NewEncoder(w)
+		_ = enc.Encode(resp)
 	}
 }
 
-func HandleLight(logger *log.Logger) http.HandlerFunc {
+func HandleLight(logger *log.Logger, m mqtt.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger.Printf("%s %s", r.Method, r.URL.Path)
 
@@ -94,40 +60,35 @@ func HandleLight(logger *log.Logger) http.HandlerFunc {
 
 		id := strings.TrimPrefix(r.URL.Path, "/api/001788FFFE23BFC2/lights/")
 
-		var name string
+		lights, err := m.GetLights(r.Context())
+		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 
-		switch id {
-		case "1":
-			name = "Living Room"
-		case "2":
-			name = "Kitchen"
-		case "3":
-			name = "Bedroom"
-		default:
+		l, ok := lights[id]
+		if !ok {
 			http.NotFound(w, r)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-
-		fmt.Fprintf(w, `{
-			"state": {
-				"on": false,
-				"bri": 254,
-				"hue": 0,
-				"sat": 0,
-				"effect": "none",
-				"xy": [0.5, 0.5],
-				"ct": 250,
-				"alert": "none",
-				"colormode": "ct"
+		resp := map[string]any{
+			"state": map[string]any{
+				"on":  l.On,
+				"bri": l.Brightness,
+				"hue": l.Hue,
+				"sat": l.Sat,
 			},
-			"type": "Extended color light",
-			"name": %q,
-			"modelid": "LCT001",
+			"type":             "Extended color light",
+			"name":             l.Name,
+			"modelid":          "LCT001",
 			"manufacturername": "HarmonyHueBridge",
-			"uniqueid": "00:11:22:33:44:55:66:%s-00",
-			"swversion": "1.0"
-		}`, name, id)
+			"uniqueid":         fmt.Sprintf("00:11:22:33:44:55:66:%s-00", id),
+			"swversion":        "1.0",
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		enc := json.NewEncoder(w)
+		_ = enc.Encode(resp)
 	}
 }

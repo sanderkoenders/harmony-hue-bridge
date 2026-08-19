@@ -12,6 +12,7 @@ import (
 
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/httpapi"
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/mqtt"
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/ssdp"
 )
 
@@ -28,7 +29,20 @@ func main() {
 	defer stop()
 
 	ssdpServer := ssdp.NewServer(logger, hueBridge)
-	httpServer := httpapi.NewServer(logger, hueBridge)
+
+	// configure MQTT client
+	mqttCfg := mqtt.Config{
+		Broker:    "tcp://127.0.0.1:1883",
+		ClientID:  "harmony-hue-bridge",
+		KeepAlive: 60,
+	}
+	mqttClient := mqtt.NewPahoClient(mqttCfg)
+	if err := mqttClient.Connect(ctx); err != nil {
+		logger.Fatalf("failed to connect mqtt: %v", err)
+	}
+	defer mqttClient.Disconnect()
+
+	httpServer := httpapi.NewServer(logger, hueBridge, mqttClient)
 
 	httpErrCh := make(chan error, 1)
 	go func() {

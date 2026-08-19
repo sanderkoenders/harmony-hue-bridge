@@ -9,17 +9,20 @@ import (
 
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/httpapi/handlers"
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/mqtt"
 )
 
 type Server struct {
 	logger *log.Logger
 	bridge *bridge.Bridge
+	mqtt   mqtt.Client
 }
 
-func NewServer(logger *log.Logger, bridge *bridge.Bridge) *Server {
+func NewServer(logger *log.Logger, bridge *bridge.Bridge, m mqtt.Client) *Server {
 	return &Server{
 		logger: logger,
 		bridge: bridge,
+		mqtt:   m,
 	}
 }
 
@@ -34,8 +37,8 @@ func (s *Server) Run(ctx context.Context, addr string) error {
 
 	mux.HandleFunc("/description.xml", handlers.HandleDescription(s.logger, s.bridge))
 	mux.HandleFunc("/api/", handlers.HandleApi(s.logger, s.bridge))
-	mux.HandleFunc("/api/"+s.bridge.Username+"/lights", handlers.HandleLights(s.logger))
-	mux.HandleFunc("/api/"+s.bridge.Username+"/lights/1", handlers.HandleLight(s.logger))
+	mux.HandleFunc("/api/"+s.bridge.Username+"/lights", handlers.HandleLights(s.logger, s.mqtt))
+	mux.HandleFunc("/api/"+s.bridge.Username+"/lights/1", handlers.HandleLight(s.logger, s.mqtt))
 	mux.HandleFunc("/api/"+s.bridge.Username+"/groups", handlers.HandleGroups(s.logger))
 	mux.HandleFunc("/api/"+s.bridge.Username+"/scenes", handlers.HandleScenes(s.logger))
 	mux.HandleFunc("/", s.HandleUnknownRequest)
