@@ -1,8 +1,11 @@
 package httpapi
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 	"github.com/sanderkoenders/harmony-hue-bridge/internal/httpapi/handlers"
@@ -26,7 +29,7 @@ func (s *Server) HandleUnknownRequest(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 }
 
-func (s *Server) Run(addr string) error {
+func (s *Server) Run(ctx context.Context, addr string) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/description.xml", handlers.HandleDescription(s.logger, s.bridge))
@@ -35,10 +38,29 @@ func (s *Server) Run(addr string) error {
 	mux.HandleFunc("/api/001788FFFE23BFC2/lights/1", handlers.HandleLight(s.logger))
 	mux.HandleFunc("/api/001788FFFE23BFC2/groups", handlers.HandleGroups(s.logger))
 	mux.HandleFunc("/api/001788FFFE23BFC2/scenes", handlers.HandleScenes(s.logger))
-
 	mux.HandleFunc("/", s.HandleUnknownRequest)
+
+	httpServer := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := httpServer.Shutdown(shutdownCtx); err != nil {
+			s.logger.Printf("HTTP shutdown failed: %v", err)
+		}
+	}()
 
 	s.logger.Printf("HTTP server listening on %s", addr)
 
-	return http.ListenAndServe(addr, mux)
+	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	return nil
 }

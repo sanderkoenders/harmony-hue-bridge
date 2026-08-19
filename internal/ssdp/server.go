@@ -34,7 +34,11 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 	defer conn.Close()
 
-	return s.readPackets(ctx, conn, s.handlePacket)
+	if err := s.readPackets(ctx, conn, s.handlePacket); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Server) listen(ctx context.Context) (*net.UDPConn, error) {
