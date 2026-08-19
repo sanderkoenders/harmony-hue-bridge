@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"strings"
+
+	"github.com/sanderkoenders/harmony-hue-bridge/internal/bridge"
 )
 
 const (
@@ -15,11 +17,13 @@ const (
 
 type Server struct {
 	logger *log.Logger
+	bridge *bridge.Bridge
 }
 
-func NewServer(logger *log.Logger) *Server {
+func NewServer(logger *log.Logger, bridge *bridge.Bridge) *Server {
 	return &Server{
 		logger: logger,
+		bridge: bridge,
 	}
 }
 
@@ -81,13 +85,6 @@ func (s *Server) handlePacket(
 	st := msg.Header("st")
 	man := msg.Header("man")
 
-	// s.logger.Printf(
-	// 	"M-SEARCH from %s: ST=%q MAN=%q",
-	// 	remoteAddr,
-	// 	st,
-	// 	man,
-	// )
-
 	// Only respond to actual SSDP discovery requests.
 	if !strings.EqualFold(man, `"ssdp:discover"`) {
 		return
@@ -97,10 +94,10 @@ func (s *Server) handlePacket(
 		"HTTP/1.1 200 OK\r\n"+
 			"CACHE-CONTROL: max-age=100\r\n"+
 			"EXT:\r\n"+
-			"LOCATION: http://192.168.30.104:80/description.xml\r\n"+
+			"LOCATION: http://"+s.bridge.IpAddr+":"+fmt.Sprintf("%d", s.bridge.Port)+"/description.xml\r\n"+
 			"SERVER: Linux/1.0 UPnP/1.0 IpBridge/1.0\r\n"+
 			"ST: %s\r\n"+
-			"USN: uuid:2f402f80-da50-11e1-9b23-001788255acc::urn:schemas-upnp-org:device:basic:1\r\n"+
+			"USN: uuid:"+s.bridge.UUID+"::urn:schemas-upnp-org:device:basic:1\r\n"+
 			"\r\n",
 		st,
 	)
@@ -114,10 +111,4 @@ func (s *Server) handlePacket(
 		)
 		return
 	}
-
-	// s.logger.Printf(
-	// 	"SSDP response sent to %s: ST=%q",
-	// 	remoteAddr,
-	// 	st,
-	// )
 }
