@@ -43,12 +43,7 @@ func parseDescriptionXML(bridge *bridge.Bridge) string {
 
 func HandleDescription(logger *log.Logger, bridge *bridge.Bridge) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Printf(
-			"HTTP request: %s %s from %s",
-			r.Method,
-			r.URL.Path,
-			r.RemoteAddr,
-		)
+		logger.Printf("HTTP %s %s from %s", r.Method, r.URL.RequestURI(), r.RemoteAddr)
 
 		w.Header().Set(
 			"Content-Type",
